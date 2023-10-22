@@ -1,0 +1,9 @@
+"0","all_names <- data |>"
+"0","  select(name) |>"
+"0","  distinct(name) |>"
+"0","  list()"
+"0",""
+"0","list = as.list(all_names)"
+"0","print(list)"
+"1","[[1]]
+"
