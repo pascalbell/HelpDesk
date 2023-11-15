@@ -17,7 +17,7 @@ library(writexl)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 10:22:23.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 11:15:23.csv") 
 
 data <- data |>
   filter(datescreen >= "2021-10-01")
@@ -153,8 +153,8 @@ all_names <- data |>
          insurance,
          zipcode)
 all_names
-write.csv(all_names, "~/workspace/RStudio/helpdesk/Data csv/Patients 10:22:23.csv", row.names=FALSE)
-write_xlsx(all_names,"~/workspace/RStudio/helpdesk/Data csv/Patients 10:22:23.xlsx")
+#write.csv(all_names, "~/workspace/RStudio/helpdesk/Data csv/Patients #10:22:23.csv", row.names=FALSE)
+#write_xlsx(all_names,"~/workspace/RStudio/helpdesk/Data csv/Patients #10:22:23.xlsx")
 ```
 
 ```{r}
@@ -700,3 +700,30 @@ data|>
   count(followup_2_weeks_complete_txt)
   
 ```
+
+
+
+```{r} 
+#| label: get all relevant information
+all_info <- data |>
+  select(name, 
+         datescreen, 
+         age_at_encounter,
+         dob,
+         zipcode,
+         screened_positive,
+         num_need,
+         age_bins,
+         gender_txt,
+         race_txt,
+         insurance,
+         followup_2_weeks_complete_txt,
+         referral_complete_txt,
+         attempted_ref_categorical,
+         contains("needs"),
+         everything())
+
+#write_xlsx(all_info,"~/workspace/RStudio/helpdesk/Data csv/Patients 11:15:23.xlsx")
+
+```
+
