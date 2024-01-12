@@ -17,7 +17,7 @@ library(writexl)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 11:15:23.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 1:12:24.csv") 
 
 data <- data |>
   filter(datescreen >= "2021-10-01")
@@ -725,5 +725,49 @@ all_info <- data |>
 
 #write_xlsx(all_info,"~/workspace/RStudio/helpdesk/Data csv/Patients 11:15:23.xlsx")
 
+```
+
+
+#Number of Patients at Each Step
+
+```{r}
+semester_23F <- data |>
+  filter(datescreen >= "2023-08-29",
+         datescreen <= "2023-12-31")
+```
+
+
+```{r}
+#| label: number of patients screened
+
+semester_23F |>
+  nrow()
+```
+
+```{r}
+#| label: screened positive
+
+semester_23F |>
+  filter(screened_positive == "positive") |>
+  nrow()
+```
+
+```{r}
+#| label: wanted assistance
+
+semester_23F |>
+  filter(likeassistance == 1,
+         screened_positive == "positive") |>
+  nrow()
+```
+
+```{r}
+#| label: enrolled in nccare360
+
+semester_23F |>
+  filter(nccare360 == 1,
+         likeassistance == 1,
+         screened_positive == "positive") |>
+  nrow()
 ```
 
