@@ -769,5 +769,8 @@ semester_23F |>
          likeassistance == 1,
          screened_positive == "positive") |>
   nrow()
+
+semester_23F |>
+  count(nccare360)
 ```
 
