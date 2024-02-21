@@ -19,8 +19,8 @@ library(tidyverse)
 #change dataset here
 data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 2:20:24.csv") 
 
-data <- data |>
-  filter(datescreen >= "2021-10-01")
+#data <- data |>
+#  filter(datescreen >= "2021-10-01")
   #filter(datescreen >= "2021-09-01" & datescreen <= "2023-09-01")
 
 data <- data |>
@@ -779,5 +779,9 @@ semester_23F |>
 data |>
   filter(nccare360 == 1) |>
   nrow()
+
+data |>
+  nrow()
+
 ```
 
