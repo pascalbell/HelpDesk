@@ -17,7 +17,7 @@ library(writexl)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 2:20:24.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:15:24.csv") 
 
 #data <- data |>
 #  filter(datescreen >= "2021-10-01")
@@ -732,8 +732,8 @@ all_info <- data |>
 
 ```{r}
 semester_23F <- data |>
-  filter(datescreen >= "2023-08-29",
-         datescreen <= "2023-12-31")
+  filter(datescreen >= "2023-08-29")
+#         datescreen <= "2023-12-31")
 ```
 
 
