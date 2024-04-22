@@ -17,7 +17,7 @@ library(writexl)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:15:24.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:22:24.csv") 
 
 #data <- data |>
 #  filter(datescreen >= "2021-10-01")
@@ -783,5 +783,11 @@ data |>
 data |>
   nrow()
 
+data |>
+  count(followup_2_weeks_complete_txt)
+
+semester_23F |>
+  count(followup_2_weeks_complete_txt)
+  
 ```
 
