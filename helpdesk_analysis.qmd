@@ -106,6 +106,33 @@ data |>
 ```
 
 
+```{r}
+#| label: language distribution
+
+data |>
+  select(language) |>
+  mutate(language_txt = if_else(language == 0, "English", 
+                                if_else(language == 1, "Choose not to answer", 
+                                        "Language other than english")))  |>
+  count(language_txt) |>
+  mutate(prop = round(n/sum(n) * 100, digits = 2)) |>
+  ggplot(aes(x = language_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  theme_bw() +
+  labs(x = "Language",
+       y = "Percent") +
+  geom_text(aes(label = if_else(n > 1,
+                                paste(prop, 
+                                      "% (",
+                                      n,
+                                      ")",
+                                      sep = ""), "")), 
+            vjust = 1.5, 
+            size = 3)
+```
+
+
+
 
 ```{r}
 #| label: patients by gender
@@ -562,7 +589,6 @@ data |>
          "Number positive + wants assistance" = n) |>
   print.data.frame()
 ```
-
 
 **What are the most common needs and referral categories?**
 
