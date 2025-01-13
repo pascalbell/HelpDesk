@@ -17,7 +17,7 @@ library(writexl)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 10:21:24.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 1:13:25.csv") 
 
 data <- data |>
   filter(datescreen >= "2022-01-01" & datescreen <= "2024-10-16")
@@ -781,7 +781,7 @@ data |>
 
 ```{r}
 semester_23F <- data |>
-  filter(datescreen >= "2024-05-20" & datescreen <= "2024-08-11")
+  filter(datescreen >= "2024-08-01" & datescreen <= "2024-12-31")
 ```
 
 
@@ -789,6 +789,11 @@ semester_23F <- data |>
 #| label: number of patients screened
 
 semester_23F |>
+  nrow()
+
+# number of referrals
+semester_23F |>
+  count(attempt1_ref) |>
   nrow()
 ```
 
