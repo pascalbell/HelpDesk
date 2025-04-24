@@ -1,27 +1,30 @@
 ---
-title: "dataAnalysisTask"
+title: "ED Helpdesk Data Analysis"
 format: pdf
 editor: source
 ---
 
-```{r}
-
+```{r echo=F, warning=F, message=F}
 library(knitr)
 library(kableExtra)
 library(writexl)
+library(tigris)
+library(tidyverse)
+library(broom)
 ```
 
-#DATE FILTERING
 
-```{r}
-#| label: set up data properly, modifying race
+# Race, Age, and Gender Patient Distributions
+
+```{r message=F, echo=F, warning=F}
+#| label: DATE FILTERING, set up data properly, modifying race
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 1:13:25.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:23:25.csv") 
 
 data <- data |>
-  filter(datescreen >= "2022-01-01" & datescreen <= "2024-10-16")
+  filter(datescreen >= "2025-01-01" & datescreen <= "2025-10-16")
 
 
 data <- data |>
@@ -56,7 +59,7 @@ data <- data |>
                                                              "NA"))))))
 ```
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: convert race to text
 data <- data |>
   mutate(race_txt = case_when(
@@ -84,7 +87,7 @@ data <- data |>
                                 "Other"))
 ```
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: race breakdown
 data |>
   count(race_txt) |>
@@ -107,7 +110,7 @@ data |>
 ```
 
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: language distribution
 
 data |>
@@ -121,7 +124,8 @@ data |>
   geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
   theme_bw() +
   labs(x = "Language",
-       y = "Percent") +
+       y = "Percent",
+       title = "Patient Language Distribution") +
   geom_text(aes(label = if_else(n > 1,
                                 paste(prop, 
                                       "% (",
@@ -135,7 +139,7 @@ data |>
 
 
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: patients by gender
 data <- data |>
   mutate(gender_txt = case_when(
@@ -158,7 +162,8 @@ data |>
   geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
   theme_bw() +
   labs(x = "Gender",
-       y = "Percent") +
+       y = "Percent",
+       title = "Patient Gender Distribution") +
   geom_text(aes(label = if_else(n > 1,
                                 paste(prop, 
                                       "% (",
@@ -168,7 +173,7 @@ data |>
 ```
 
 
-```{r}
+```{r message=F, echo=F, warning=F, output=F}
 #| label: list of all patient names
 
 all_names <- data |>
@@ -185,7 +190,7 @@ all_names
 #write_xlsx(all_names,"~/workspace/RStudio/helpdesk/Data csv/Patients #10:22:23.xlsx")
 ```
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: Patients by Age
 data <- data |>
   mutate(age_bins = case_when(
@@ -205,7 +210,8 @@ data |>
   geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
   theme_bw() +
   labs(x = "Age",
-       y = "Percent") +
+       y = "Percent",
+       title = "Patient Age Distribution") +
   geom_text(aes(label = if_else(n > 1,
                                 paste(prop, 
                                       "% (",
@@ -216,8 +222,12 @@ data |>
             size = 3)
 ```
 
+\newpage
 
-```{r}
+# QR Code Distributions
+
+
+```{r message=F, echo=F, warning=F}
 #| label: QR Code race distributions
 data |>
   filter(qr_code == 1) |>
@@ -226,11 +236,13 @@ data |>
   geom_bar(stat = "identity", fill = "lightblue", color = "black") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-  labs(x = "Race", y = "Count", title = "Race of Patients Using QR Code") +
+  labs(x = "Race", 
+       y = "Count", 
+       title = "Race of Patients Using QR Code") +
   geom_text(aes(label = n), vjust = 1.25)
 ```
 
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: QR code by gender
 data |>
   filter(qr_code == 1) |>
@@ -243,8 +255,8 @@ data |>
   geom_text(aes(label = n), vjust = 1.25)
 ```
 
-```{r}
-#| label: QR code by gender
+```{r message=F, echo=F, warning=F}
+#| label: QR code by age
 data |>
   filter(qr_code == 1) |>
   count(age_bins) |>
@@ -256,344 +268,11 @@ data |>
   geom_text(aes(label = n), vjust = 1.25)
 ```
 
+\newpage
 
-```{r}
-#| label: multiple/one need
+# Needs Information
 
-data <- data |>
-  mutate(sum_needs = needs___1 + needs___2 +
-                         needs___3 +
-                         needs___4 +
-                         needs___5 +
-                         needs___6 +
-                         needs___8 +
-                         needs___10 +
-                         needs___11 +
-                         needs___12,
-         num_need = case_when(
-           sum_needs == 0 ~ "No needs",
-           sum_needs == 1 ~ "One need",
-           sum_needs > 1 ~ "Multiple needs"
-         ))
-# data |>
-#   filter(num_need != "No needs") |>
-#   count(race_txt, num_need) |>
-#   filter(race_txt != "No Answer",
-#          race_txt != "Other",
-#          race_txt != "Native Hawaiian",
-#          race_txt != "Pacific Islander",
-#          !is.na(race_txt)) |>
-#   mutate(prop = round(100*n/sum(n), 0)) |>
-#   ggplot(aes(x = race_txt, y = prop)) +
-#   geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
-#   facet_wrap("num_need") +
-#   labs(x = "",
-#        y = "Percent") +
-#   coord_flip() +
-#  geom_text(aes(label = if_else(n > 50,
-#                                 paste(prop, 
-#                                       "% (",
-#                                       n,
-#                                       ")",
-#                                       sep = ""), "")), 
-#             hjust = 1, 
-#             size = 2.5) +
-#   geom_text(aes(label = if_else(n < 50,
-#                                 paste(prop, 
-#                                       "% (",
-#                                       n,
-#                                       ")",
-#                                       sep = ""), "")), 
-#             hjust = -0.25, 
-#             size = 2.5) +
-#   theme(axis.text.y = element_text(size = 10))
-  
-```
-
-```{r}
-#| label: gender by num needs
-data |>
-  filter(num_need != "No needs") |>
-  count(gender_txt, num_need) |>
-  ggplot(aes(x = gender_txt, y = n)) +
-  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
-  facet_wrap("num_need") +
-  labs(x = "Gender",
-       y = "Count",
-       title = "Gender of Patients Based on Needs") +
-  coord_flip() +
-  geom_text(aes(label = n), size = 2.5, color = "black")
-```
-
-```{r}
-#| label: age by num needs
-data |>
-  filter(num_need != "No needs") |>
-  count(age_bins, num_need) |>
-  ggplot(aes(x = age_bins, y = n)) +
-  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
-  facet_wrap("num_need") +
-  labs(x = "Age",
-       y = "Count",
-       title = "Age of Patients Based on Needs") +
-  coord_flip() +
-  geom_text(aes(label = n), size = 2.5, color = "black")
-```
-
-```{r}
-#| label: NCCARE race distributions
-nccare360.labs <- c("NCCARE360 Enrolled", "NCCARE360 Not Enrolled")
-names(nccare360.labs) <- c(1, 0)
-
-data |>
-  filter(nccare360 == 1 | nccare360 == 0) |>
-  count(race_txt, nccare360) |>
-  ggplot(aes(x = race_txt, y = n)) +
-  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
-  facet_wrap("nccare360",
-             labeller = labeller(nccare360 = nccare360.labs)) +
-  theme_bw() +
-  labs(x = "Race", y = "Count", title = "Race of Patients Based On NCCARE360") +
-  coord_flip() +
-  geom_text(aes(label = n), size = 2.5)
-  
-```
-
-```{r}
-#| label: NCCARE by gender
-data |>
-  filter(nccare360 == 1 | nccare360 == 0) |>
-  count(gender_txt, nccare360) |>
-  ggplot(aes(x = gender_txt, y = n)) +
-  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
-  facet_wrap("nccare360",
-             labeller = labeller(nccare360 = nccare360.labs)) +
-  theme_bw() +
-  labs(x = "Gender", y = "Count", title = "Gender of Patients Based On NCCARE360") +
-  coord_flip() +
-  geom_text(aes(label = n), size = 2.5)
-```
-
-```{r}
-#| label: NCCARE by age
-data |>
-  filter(nccare360 == 1 | nccare360 == 0) |>
-  count(age_bins, nccare360) |>
-  ggplot(aes(x = age_bins, y = n)) +
-  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
-  facet_wrap("nccare360",
-             labeller = labeller(nccare360 = nccare360.labs)) +
-  theme_bw() +
-  labs(x = "Age", y = "Count", title = "Age of Patients Based On NCCARE360") +
-  coord_flip() +
-  geom_text(aes(label = n), size = 2.5)
-```
-
-
-```{r}
-#| label: attempted referral based on race
-
-data <- data |>
-  mutate(attempted_ref_categorical = if_else(is.na(attempt1_ref), 
-                                             "not attempted",
-                                             "attempted"))
-data |>
-  filter(attempted_ref_categorical == "attempted") |>
-  count(race_txt) |>
-  rename("Race" = race_txt,
-         "Number that attempted referral" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: attempted referral based on gender
-data |>
-  filter(attempted_ref_categorical == "attempted") |>
-  count(gender_txt) |>
-  rename("Gender" = gender_txt,
-         "Number that attempted referral" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: attempted referral based on age
-data |>
-  filter(attempted_ref_categorical == "attempted") |>
-  count(age_bins) |>
-  rename("Age" = age_bins,
-         "Number that attempted referral" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: completed referral based on race
-
-data <- data |>
-  mutate(referral_complete_txt = case_when(
-    referral_complete == 0 ~ "Incomplete",
-    referral_complete == 1 ~ "Unverified",
-    referral_complete == 2 ~ "Complete"
-  ))
-  
-data |>
-  filter(referral_complete_txt == "Complete") |>
-  count(race_txt) |>
-  rename("Number with Completed Referral" = n,
-         "Race" = race_txt) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: gender by completed referral
-
-data |>
-  filter(referral_complete_txt == "Complete") |>
-  count(gender_txt) |>
-  rename("Number with Completed Referral" = n,
-         "Gender" = gender_txt) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: age by completed referral
-
-data |>
-  filter(referral_complete_txt == "Complete") |>
-  count(age_bins) |>
-  rename("Number with Completed Referral" = n,
-         "Age" = age_bins) |>
-  print.data.frame()
-```
-
-
-```{r}
-#| label: completed follow up based on race
-
-data <- data |>
-  mutate(followup_2_weeks_complete_txt = case_when(
-    followup_2_weeks_complete == 0 ~ "Incomplete",
-    followup_2_weeks_complete == 1 ~ "Unverified",
-    followup_2_weeks_complete == 2 ~ "Complete",
-  ))
-data |>
-  filter(followup_2_weeks_complete_txt == "Complete") |>
-  count(race_txt) |>
-  rename("Race" = race_txt,
-         "Number with Completed Follow-up" = n) |>
-  print.data.frame()
-
-race_followup <- data |>
-  filter(followup_2_weeks_complete_txt == "Complete") |>
-  count(race_txt) |>
-  rename("Race" = race_txt,
-         "Number with Completed Follow-up" = n) |>
-  pivot_wider(names_from = Race, values_from = "Number with Completed Follow-up") |>
-  mutate(Screening = "Followup Complete")
-```
-
-```{r}
-#| label: gender by completed followup
-
-data |>
-  filter(followup_2_weeks_complete_txt == "Complete") |>
-  count(gender_txt) |>
-  rename("Gender" = gender_txt,
-         "Number with Completed Follow-up" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: gender by completed followup
-
-data |>
-  filter(followup_2_weeks_complete_txt == "Complete") |>
-  count(age_bins) |>
-  rename("Age" = age_bins,
-         "Number with Completed Follow-up" = n) |>
-  print.data.frame()
-```
-
-
-```{r}
-#| label: screening positive
-
-data <- data |>
-  mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
-data |>
-  count(screened_positive, race_txt) |>
-  rename("Race" = race_txt,
-         "Screening" = screened_positive,
-         "Count" = n) |>
-  print.data.frame()
-
-race_screening <- data |>
-  count(screened_positive, race_txt) |>
-  rename("Race" = race_txt,
-         "Screening" = screened_positive,
-         "Count" = n) |>
-  pivot_wider(names_from = Race, values_from = Count)
-
-race_screening |>
-  full_join(race_followup) |>
-  rename("Variable" = Screening)
-```
-
-```{r}
-#| label: screening by gender
-data |>
-  count(screened_positive, gender_txt) |>
-  rename("Gender" = gender_txt,
-         "Screening" = screened_positive,
-         "Count" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: screening by gender
-data |>
-  count(screened_positive, age_bins) |>
-  rename("Age" = age_bins,
-         "Screening" = screened_positive,
-         "Count" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: race by screened negative wanted assistance
-
-data |>
-  filter(likeassistance == 1) |>
-  count(race_txt) |>
-  rename("Race" = race_txt,
-         "Number positive + wants assistance" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: gendery by screened negative wanted assistance
-
-data |>
-  filter(likeassistance == 1) |>
-  count(gender_txt) |>
-  rename("Gender" = gender_txt,
-         "Number positive + wants assistance" = n) |>
-  print.data.frame()
-```
-
-```{r}
-#| label: age by screened negative wanted assistance
-
-data |>
-  filter(likeassistance == 1) |>
-  count(age_bins) |>
-  rename("Age" = age_bins,
-         "Number positive + wants assistance" = n) |>
-  print.data.frame()
-```
-
-**What are the most common needs and referral categories?**
-
-```{r}
+```{r message=F, echo=F, warning=F}
 #| label: needs breakdown
 
 needs <- data |>
@@ -650,9 +329,159 @@ needs |>
             size = 3)
 ```
 
-The most common need categories are categories 1, 5, and 4.
+```{r message=F, echo=F, warning=F}
+#| label: multiple/one need
 
-```{r}
+data <- data |>
+  mutate(sum_needs = needs___1 + needs___2 +
+                         needs___3 +
+                         needs___4 +
+                         needs___5 +
+                         needs___6 +
+                         needs___8 +
+                         needs___10 +
+                         needs___11 +
+                         needs___12,
+         num_need = case_when(
+           sum_needs == 0 ~ "No needs",
+           sum_needs == 1 ~ "One need",
+           sum_needs > 1 ~ "Multiple needs"
+         ))
+data |>
+  filter(num_need != "No needs") |>
+  count(race_txt, num_need) |>
+  filter(race_txt != "No Answer",
+         race_txt != "Other",
+         race_txt != "Native Hawaiian",
+         race_txt != "Pacific Islander",
+         !is.na(race_txt)) |>
+  mutate(prop = round(100*n/sum(n), 0)) |>
+  ggplot(aes(x = race_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
+  facet_wrap("num_need") +
+  labs(x = "",
+       y = "Percent") +
+  coord_flip() +
+ geom_text(aes(label = if_else(n > 50,
+                                paste(prop,
+                                      "% (",
+                                      n,
+                                      ")",
+                                      sep = ""), "")),
+            hjust = 1,
+            size = 2.5) +
+  geom_text(aes(label = if_else(n < 50,
+                                paste(prop,
+                                      "% (",
+                                      n,
+                                      ")",
+                                      sep = ""), "")),
+            hjust = -0.25,
+            size = 2.5) +
+  theme(axis.text.y = element_text(size = 10))
+  
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: gender by num needs
+data |>
+  filter(num_need != "No needs") |>
+  count(gender_txt, num_need) |>
+  ggplot(aes(x = gender_txt, y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
+  facet_wrap("num_need") +
+  labs(x = "Gender",
+       y = "Count",
+       title = "Gender of Patients Based on Needs") +
+  coord_flip() +
+  geom_text(aes(label = n), size = 2.5, color = "black")
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: age by num needs
+data |>
+  filter(num_need != "No needs") |>
+  count(age_bins, num_need) |>
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
+  facet_wrap("num_need") +
+  labs(x = "Age",
+       y = "Count",
+       title = "Age of Patients Based on Needs") +
+  coord_flip() +
+  geom_text(aes(label = n), size = 2.5, color = "black")
+```
+
+\newpage
+
+# NCCARE 360 Information
+
+```{r echo=F}
+data |>
+  count(nccare360) |>
+  mutate(Percent = round(n / sum(n), digits = 2),
+         nccare360 = if_else(nccare360 == 0, "No", "Yes")) |>
+  rename("Enrolled in NCCARE360" = nccare360,
+         "Count" = n) |>
+  kable()
+```
+
+
+```{r message=F, echo=F, warning=F}
+#| label: NCCARE race distributions
+nccare360.labs <- c("NCCARE360 Enrolled", "NCCARE360 Not Enrolled")
+names(nccare360.labs) <- c(1, 0)
+
+data |>
+  filter(nccare360 == 1 | nccare360 == 0) |>
+  count(race_txt, nccare360) |>
+  ggplot(aes(x = race_txt, y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  facet_wrap("nccare360",
+             labeller = labeller(nccare360 = nccare360.labs)) +
+  theme_bw() +
+  labs(x = "Race", y = "Count", title = "Race of Patients Based On NCCARE360") +
+  coord_flip() +
+  geom_text(aes(label = n), size = 2.5)
+  
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: NCCARE by gender
+data |>
+  filter(nccare360 == 1 | nccare360 == 0) |>
+  count(gender_txt, nccare360) |>
+  ggplot(aes(x = gender_txt, y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  facet_wrap("nccare360",
+             labeller = labeller(nccare360 = nccare360.labs)) +
+  theme_bw() +
+  labs(x = "Gender", y = "Count", title = "Gender of Patients Based On NCCARE360") +
+  coord_flip() +
+  geom_text(aes(label = n), size = 2.5)
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: NCCARE by age
+data |>
+  filter(nccare360 == 1 | nccare360 == 0) |>
+  count(age_bins, nccare360) |>
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  facet_wrap("nccare360",
+             labeller = labeller(nccare360 = nccare360.labs)) +
+  theme_bw() +
+  labs(x = "Age", y = "Count", title = "Age of Patients Based On NCCARE360") +
+  coord_flip() +
+  geom_text(aes(label = n), size = 2.5)
+```
+
+
+\newpage
+
+# Referral Information
+
+```{r message=F, echo=F, warning=F}
 #| label: referral category breakdown
 ref_cat_data <- data |>
   select(contains("ref_cat")) |>
@@ -704,34 +533,246 @@ ref_cat_data |>
 ```
 
 
-```{r}
-data |>
-  nrow()
-data |>
-  filter(needs___9 != 0) |> #screened positive
-  nrow()
+```{r message=F, echo=F, warning=F}
+#| label: attempted referral based on race
 
+data <- data |>
+  mutate(attempted_ref_categorical = if_else(is.na(attempt1_ref), 
+                                             "not attempted",
+                                             "attempted"))
 data |>
-  filter (needs___9 == 0,
-          likeassistance == 1,
-          nccare360 == 1,
-          referral_complete == 2,
-          followup_2_weeks_complete != 2) |>
-  nrow()
+  filter(attempted_ref_categorical == "attempted") |>
+  count(race_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Race" = race_txt,
+         "Number that attempted referral" = n) |>
+  kable()
+```
 
-#people who reached bottom of the flow
-data|>
-  filter(needs___9 == 0,
-         likeassistance == 1,
-         nccare360 == 1,
-         referral_complete == 2) |>
-  count(followup_2_weeks_complete_txt)
+```{r message=F, echo=F, warning=F}
+#| label: attempted referral based on gender
+data |>
+  filter(attempted_ref_categorical == "attempted") |>
+  count(gender_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Gender" = gender_txt,
+         "Number that attempted referral" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: attempted referral based on age
+data |>
+  filter(attempted_ref_categorical == "attempted") |>
+  count(age_bins) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Age" = age_bins,
+         "Number that attempted referral" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: completed referral based on race
+
+data <- data |>
+  mutate(referral_complete_txt = case_when(
+    referral_complete == 0 ~ "Incomplete",
+    referral_complete == 1 ~ "Unverified",
+    referral_complete == 2 ~ "Complete"
+  ))
   
+data |>
+  filter(referral_complete_txt == "Complete") |>
+  count(race_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Number with Completed Referral" = n,
+         "Race" = race_txt) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: gender by completed referral
+
+data |>
+  filter(referral_complete_txt == "Complete") |>
+  count(gender_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Number with Completed Referral" = n,
+         "Gender" = gender_txt) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: age by completed referral
+
+data |>
+  filter(referral_complete_txt == "Complete") |>
+  count(age_bins) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Number with Completed Referral" = n,
+         "Age" = age_bins) |>
+  kable()
+```
+
+\newpage
+
+# Followup Information
+
+
+```{r message=F, echo=F, warning=F}
+#| label: completed follow up based on race
+
+data <- data |>
+  mutate(followup_2_weeks_complete_txt = case_when(
+    followup_2_weeks_complete == 0 ~ "Incomplete",
+    followup_2_weeks_complete == 1 ~ "Unverified",
+    followup_2_weeks_complete == 2 ~ "Complete",
+  ))
+```
+
+```{r echo=F}
+#| label: followup distribution
+
+data |>
+  count(followup_2_weeks_complete_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("2 Week Followup Complete" = followup_2_weeks_complete_txt,
+         "Count" = n) |>
+  kable()
+  
+  
+
+```
+
+
+```{r message=F, echo=F, warning=F}
+data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
+  count(race_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Race" = race_txt,
+         "Number with Completed Follow-up" = n) |>
+  kable()
+
+race_followup <- data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
+  count(race_txt) |>
+  rename("Race" = race_txt,
+         "Number with Completed Follow-up" = n) |>
+  pivot_wider(names_from = Race, values_from = "Number with Completed Follow-up") |>
+  mutate(Screening = "Followup Complete") |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: gender by completed followup
+
+data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
+  count(gender_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Gender" = gender_txt,
+         "Number with Completed Follow-up" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: age by completed followup
+
+data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
+  count(age_bins) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("Age" = age_bins,
+         "Number with Completed Follow-up" = n) |>
+  kable()
+  
+```
+
+\newpage
+
+# Screening Information
+
+```{r message=F, echo=F, warning=F}
+#| label: screening positive
+
+data <- data |>
+  mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
+# data |>
+#   count(screened_positive, race_txt) |>
+#   rename("Race" = race_txt,
+#          "Screening" = screened_positive,
+#          "Count" = n) |>
+#   print.data.frame()
+# 
+# race_screening <- data |>
+#   count(screened_positive, race_txt) |>
+#   rename("Race" = race_txt,
+#          "Screening" = screened_positive,
+#          "Count" = n) |>
+#   pivot_wider(names_from = Race, values_from = Count)
+# 
+# race_screening |>
+#   full_join(race_followup) |>
+#   rename("Variable" = Screening)
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: screening by gender
+data |>
+  count(screened_positive, gender_txt) |>
+  rename("Gender" = gender_txt,
+         "Screening" = screened_positive,
+         "Count" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: screening by age
+data |>
+  count(screened_positive, age_bins) |>
+  rename("Age" = age_bins,
+         "Screening" = screened_positive,
+         "Count" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: race by screened negative wanted assistance
+
+data |>
+  filter(likeassistance == 1) |>
+  count(race_txt) |>
+  rename("Race" = race_txt,
+         "Number positive + wants assistance" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: gender by screened negative wanted assistance
+
+data |>
+  filter(likeassistance == 1) |>
+  count(gender_txt) |>
+  rename("Gender" = gender_txt,
+         "Number positive + wants assistance" = n) |>
+  kable()
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: age by screened negative wanted assistance
+
+data |>
+  filter(likeassistance == 1) |>
+  count(age_bins) |>
+  rename("Age" = age_bins,
+         "Number positive + wants assistance" = n) |>
+  kable()
 ```
 
 
 
-```{r} 
+```{r message=F, echo=F, warning=F}
 #| label: get all relevant information
 all_info <- data |>
   select(name, 
@@ -755,93 +796,146 @@ all_info <- data |>
 
 ```
 
+\newpage
 
-## Number of Patients at Each Step
+# Number of Patients at Each Step
 
-Each row in the csv is a patient who was screened. Number of patients talked to is not provided in csv.
 
-```{r}
-#| label: total patients screened
-data |>
+```{r message=F, echo=F, warning=F}
+#| label: number of patients at each step in flow
+
+# Each row in the csv is a patient who was screened. Number of patients talked to is not provided in csv.
+
+# total num patients screened
+total_patients <- data |>
   nrow()
 
 # distinct patients screened
-data |>
+distinct_patients <- data |>
   distinct(name) |>
   nrow()
 
-# number of referrals given
-data |>
-  count(attempt1_ref) |>
-  nrow()
-
-data |>
-  count(nccare360)
-```
-
-
-```{r}
-semester_23F <- data |>
-  filter(datescreen >= "2024-08-01" & datescreen <= "2024-12-31")
-```
-
-
-```{r}
-#| label: number of patients screened
-
-semester_23F |>
-  nrow()
-
-# number of referrals
-semester_23F |>
-  count(attempt1_ref) |>
-  nrow()
-```
-
-```{r}
-#| label: screened positive
-
-semester_23F |>
+# screened positive
+screened_pos <- data |>
   filter(screened_positive == "positive") |>
   nrow()
-```
 
-```{r}
-#| label: wanted assistance
-
-semester_23F |>
+# wanted assistance
+wanted_assis <- data |>
   filter(likeassistance == 1,
          screened_positive == "positive") |>
   nrow()
-```
 
-```{r}
-#| label: enrolled in nccare360
-
-semester_23F |>
-  filter(nccare360 == 1,
-         likeassistance == 1,
-         screened_positive == "positive") |>
+# number of referrals
+num_referrals <- data |>
+  count(attempt1_ref) |>
   nrow()
 
-semester_23F |>
-  count(nccare360)
-```
-
-
-```{r}
-data |>
+# enrolled in nccare360
+enrolled_nccare360 <- data |>
   filter(nccare360 == 1) |>
   nrow()
 
-data |>
+followup_comp <- data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
   nrow()
 
-data |>
-  count(followup_2_weeks_complete_txt)
 
-semester_23F |>
-  count(followup_2_weeks_complete_txt)
-  
+
+# people who reached bottom of the flow with everything
+# data|>
+#   filter(needs___9 == 0,
+#          likeassistance == 1,
+#          nccare360 == 1,
+#          referral_complete == 2) |>
+#   count(followup_2_weeks_complete_txt) |>
+#   mutate(Percent = round(n/sum(n) , digits = 2)) |>
+#   rename("2 Week Followup Complete" = followup_2_weeks_complete_txt,
+#          "Count" = n) |>
+#   kable()
+
+```
+
+There were `r total_patients` total screenings.
+
+There were `r distinct_patients` distinct patients screened.
+
+There were `r screened_pos` patients who screened positive for at least one need.
+
+There were `r wanted_assis` patients who wanted assistance with their needs.
+
+There were `r num_referrals` referrals given.
+
+There were `r followup_comp` 2 week followups complete.
+
+There are `r enrolled_nccare360` patients enrolled in NCCARE360.
+
+
+
+
+
+
+
+
+
+```{r message=F, echo=F, warning=F}
+#| label: nccare360 table, followup complete table
+
+# followup complete table
+data |>
+  count(followup_2_weeks_complete_txt) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  rename("2 Week Followup Complete" = followup_2_weeks_complete_txt,
+         "Count" = n) |>
+  kable()
+
+data |>
+  count(nccare360) |>
+  mutate(Percent = round(n/sum(n) , digits = 2)) |>
+  mutate(nccare360 = if_else(nccare360 == 0, "No", "Yes")) |>
+  rename("Enrolled in NCCARE360" = nccare360,
+         "Count" = n) |>
+  kable()
+
+```
+
+
+\newpage
+
+# NC Zipcodes map
+
+```{r echo=F, message=F, warning=F}
+options(tigris_use_cache = TRUE)
+
+patient_zip <- data |>
+  select(zipcode) |>
+  drop_na() |>
+  count(zipcode, name = "freq")
+
+us_states <- states(progress_bar = FALSE)
+nc <- us_states |> filter(STUSPS == "NC")
+zipcodes <- zctas(year = 2000, state = "NC", cb = TRUE) |>
+  filter(ZCTA %in% patient_zip$zipcode)
+
+zipcodes <- zipcodes |>
+  left_join(patient_zip, by = c("ZCTA" = "zipcode"))
+
+ggplot() +
+  geom_sf(data = nc, fill = "gray90") +
+  geom_sf(data = zipcodes, aes(fill = freq), linewidth = 0.1) +
+  scale_fill_gradientn(colors = c("cornsilk", "#f0d080", "red"),
+                       values = c(0, 0.03, 1), guide = "none") +
+  theme_minimal()
+```
+
+The most common zipcodes are:
+
+```{r echo=F}
+patient_zip |>
+  filter(zipcode != "00000") |>
+  arrange(desc(freq)) |>
+  mutate(Percent = round(freq / sum(freq), 2)) |>
+  slice(1:20) |>
+  kable()
 ```
 
