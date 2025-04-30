@@ -902,7 +902,7 @@ data |>
 
 \newpage
 
-# NC Zipcodes map
+t# NC Zipcodes map
 
 ```{r echo=F, message=F, warning=F}
 options(tigris_use_cache = TRUE)
@@ -910,7 +910,7 @@ options(tigris_use_cache = TRUE)
 patient_zip <- data |>
   select(zipcode) |>
   drop_na() |>
-  count(zipcode, name = "freq")
+  count(zipcode, name = "Number of Patients")
 
 us_states <- states(progress_bar = FALSE)
 nc <- us_states |> filter(STUSPS == "NC")
@@ -922,10 +922,21 @@ zipcodes <- zipcodes |>
 
 ggplot() +
   geom_sf(data = nc, fill = "gray90") +
-  geom_sf(data = zipcodes, aes(fill = freq), linewidth = 0.1) +
-  scale_fill_gradientn(colors = c("cornsilk", "#f0d080", "red"),
-                       values = c(0, 0.03, 1), guide = "none") +
-  theme_minimal()
+  geom_sf(data = zipcodes, aes(fill = `Number of Patients`), linewidth = 0.1) +
+  theme_void() +
+  theme(axis.text.x=element_blank(), 
+      axis.ticks.x=element_blank(), 
+      axis.text.y=element_blank(), 
+      axis.ticks.y=element_blank())
+
+
+# scale_fill_gradientn(colors = c("#6c87b4", "#1c69ae", "#1e2a40"),
+#                        values = c(0, 0.03, 1), guide = "none",
+#                        name = "Frequency",
+#                        breaks = c(min(zipcodes$freq),
+#                                   quantile(zipcodes$freq, 0.03),
+#                                   max(zipcodes$freq)),
+#                        labels = c("Low", "3rd percentile", "High")) +
 ```
 
 The most common zipcodes are:
@@ -933,8 +944,8 @@ The most common zipcodes are:
 ```{r echo=F}
 patient_zip |>
   filter(zipcode != "00000") |>
-  arrange(desc(freq)) |>
-  mutate(Percent = round(freq / sum(freq), 2)) |>
+  arrange(desc(`Number of Patients`)) |>
+  mutate(Percent = round(`Number of Patients` / sum(`Number of Patients`), 2)) |>
   slice(1:20) |>
   kable()
 ```
