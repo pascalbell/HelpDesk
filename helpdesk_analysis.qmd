@@ -923,6 +923,8 @@ zipcodes <- zipcodes |>
 ggplot() +
   geom_sf(data = nc, fill = "gray90") +
   geom_sf(data = zipcodes, aes(fill = `Number of Patients`), linewidth = 0.1) +
+  scale_fill_gradientn(colors = c("cornsilk", "#f0d080", "red"),
+                        values = c(0, 0.03, 1)) +
   theme_void() +
   theme(axis.text.x=element_blank(), 
       axis.ticks.x=element_blank(), 
