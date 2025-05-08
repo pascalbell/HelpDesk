@@ -24,7 +24,7 @@ library(tidyverse)
 data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:23:25.csv") 
 
 data <- data |>
-  filter(datescreen >= "2025-01-01" & datescreen <= "2025-10-16")
+  filter(datescreen <= "2025-10-16")
 
 
 data <- data |>
@@ -902,7 +902,7 @@ data |>
 
 \newpage
 
-t# NC Zipcodes map
+# NC Zipcodes map
 
 ```{r echo=F, message=F, warning=F}
 options(tigris_use_cache = TRUE)
@@ -921,7 +921,7 @@ zipcodes <- zipcodes |>
   left_join(patient_zip, by = c("ZCTA" = "zipcode"))
 
 ggplot() +
-  geom_sf(data = nc, fill = "gray90") +
+  geom_sf(data = nc, fill = "white") +
   geom_sf(data = zipcodes, aes(fill = `Number of Patients`), linewidth = 0.1) +
   scale_fill_gradientn(colors = c("cornsilk", "#f0d080", "red"),
                         values = c(0, 0.03, 1)) +
