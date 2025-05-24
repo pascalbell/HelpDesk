@@ -21,10 +21,10 @@ library(broom)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 4:23:25.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 5:24:25.csv") 
 
-data <- data |>
-  filter(datescreen < "2025-5-01")
+# data <- data |>
+#   filter(datescreen < "2025-5-01")
 
 
 data <- data |>
@@ -795,6 +795,25 @@ all_info <- data |>
 #write_xlsx(all_info,"~/workspace/RStudio/helpdesk/Data csv/Patients 1:13:24.xlsx")
 
 ```
+
+
+```{r}
+#| label: was helpdesk helpful
+
+data |>
+  count(helpful) |>
+  mutate(helpful_txt = if_else(helpful == 0, "No", "Yes"), .before = n) |>
+  select(helpful_txt, n)
+
+data |>
+  count(overallhealth) |>
+  mutate(overallhealth_txt = if_else(overallhealth == 0, "No", "Yes"), .before = n) |>
+  select(overallhealth_txt, n)
+
+data |>
+  count(followup_2_weeks_complete_txt)
+```
+
 
 \newpage
 
