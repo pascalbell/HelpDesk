@@ -21,10 +21,13 @@ library(broom)
 library(tidyverse)
 
 #change dataset here
-data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 5:24:25.csv") 
+data <- read_csv("~/workspace/RStudio/helpdesk/Data csv/Data 8:21:25.csv") 
 
-# data <- data |>
-#   filter(datescreen < "2025-5-01")
+firstSecond <- data |>
+  filter(datescreen >= "2021-8-01" & datescreen < "2023-08-01")
+
+thirdFourth <- data |>
+  filter(datescreen >= "2023-8-01" & datescreen < "2025-08-01")
 
 
 data <- data |>
@@ -831,7 +834,7 @@ total_patients <- data |>
 
 # distinct patients screened
 distinct_patients <- data |>
-  distinct(name) |>
+  distinct(duplicate_ck) |>
   nrow()
 
 # screened positive
@@ -847,7 +850,7 @@ wanted_assis <- data |>
 
 # number of referrals
 num_referrals <- data |>
-  count(attempt1_ref) |>
+  filter(!is.na(attempt1_ref)) |>
   nrow()
 
 # enrolled in nccare360
@@ -969,5 +972,27 @@ patient_zip |>
   mutate(Percent = round(`Number of Patients` / sum(`Number of Patients`), 2)) |>
   slice(1:20) |>
   kable()
+```
+# Testing
+
+```{r}
+firstSecond |>
+  nrow()
+thirdFourth |>
+  nrow()
+
+firstSecond |>
+  distinct(duplicate_ck) |>
+  nrow()
+thirdFourth |>
+  distinct(duplicate_ck) |>
+  nrow()
+
+firstSecond |>
+  filter(!is.na(attempt1_ref)) |>
+  nrow()
+thirdFourth |>
+  filter(!is.na(attempt1_ref)) |>
+  nrow()
 ```
 
