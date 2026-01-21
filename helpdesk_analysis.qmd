@@ -29,6 +29,9 @@ firstSecond <- data |>
 thirdFourth <- data |>
   filter(datescreen >= "2023-8-01" & datescreen < "2025-08-01")
 
+# date filter
+data <- data |>
+  filter(datescreen >= "2025-08-01" & datescreen < "2026-01-01")
 
 data <- data |>
    mutate(race = if_else(race___0 == 1, 0, 
@@ -530,9 +533,13 @@ ref_cat_data |>
        title = "Referral Categories Breakdown",
        y = "Proportion",
        fill = "") +
-  geom_text(aes(label = prop), hjust = 1.1, size = 3) +
-  coord_flip() +
-  theme(axis.text.y = element_blank())
+  geom_text(aes(label = prop), vjust = -.75, size = 3) +
+  theme(axis.text.x = element_blank()) +
+  scale_fill_manual(
+    values = colorRampPalette(
+      c("#f7fbff", "#9ecae1", "#6baed6", "#2171b5", "#021024")
+    )(13)
+  )
 ```
 
 
@@ -945,7 +952,7 @@ zipcodes <- zipcodes |>
 ggplot() +
   geom_sf(data = nc, fill = "white") +
   geom_sf(data = zipcodes, aes(fill = `Number of Patients`), linewidth = 0.1) +
-  scale_fill_gradientn(colors = c("cornsilk", "#f0d080", "red"),
+  scale_fill_gradientn(colors = c("lightblue", "#2171b5", "navy"),
                         values = c(0, 0.03, 1)) +
   theme_void() +
   theme(axis.text.x=element_blank(), 
