@@ -14,7 +14,7 @@ library(broom)
 ```
 
 
-# Race, Age, and Gender Patient Distributions
+# Race, Age, and Gender Patient Distributions test
 
 ```{r message=F, echo=F, warning=F}
 #| label: DATE FILTERING, set up data properly, modifying race
