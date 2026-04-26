@@ -11,6 +11,7 @@ library(writexl)
 library(tigris)
 library(tidyverse)
 library(broom)
+library(stringr)
 ```
 
 
@@ -21,17 +22,17 @@ library(broom)
 library(tidyverse)
 
 #change dataset here Test
-data <- read_csv("Data csv/Data 1:10:26.csv") 
+data <- read_csv("Data csv/Data 4:26:26.csv") 
 
 firstSecond <- data |>
-  filter(datescreen >= "2021-8-01" & datescreen < "2023-08-01")
+  filter(datescreen >= "2025-08-01" & datescreen < "2026-04-20")
 
 thirdFourth <- data |>
   filter(datescreen >= "2023-8-01" & datescreen < "2025-08-01")
 
 # date filter
 data <- data |>
-  filter(datescreen >= "2025-08-01" & datescreen < "2026-01-01")
+  filter(datescreen >= "2025-08-01" & datescreen < "2026-05-01")
 
 data <- data |>
    mutate(race = if_else(race___0 == 1, 0, 
@@ -100,7 +101,7 @@ data |>
   mutate(prop = round(n/sum(n) * 100, 1)) |>
   ggplot(aes(x = race_txt, y = prop)) +
   geom_bar(stat = "identity", fill = "lightblue", color = "black") +
-  coord_flip() +
+  coord_flip(clip = "off") +
   theme_bw() +
   labs(x = "",
        y = "Percent",
@@ -120,26 +121,45 @@ data |>
 #| label: language distribution
 
 data |>
-  select(language) |>
-  mutate(language_txt = if_else(language == 0, "English", 
-                                if_else(language == 1, "Choose not to answer", 
-                                        "Language other than english")))  |>
+  mutate(
+    otherlang_clean = otherlang |>
+      str_to_lower() |>                  # lowercase everything
+      str_trim() |>                      # remove extra spaces
+      str_replace_all("espa√±ol", "espanol") |>  # fix encoding issue
+      str_replace_all("ñ", "n")          # normalize ñ → n
+  ) |>
+  mutate(
+    otherlang_clean = case_when(
+      str_detect(otherlang_clean, "spanish|espanol") ~ "Spanish",
+      TRUE ~ otherlang_clean
+    )
+  ) |>
+  mutate(language_txt = case_when(
+    language == 0 ~ "English",
+    language == 1 ~ "Choose not to answer",
+    language == 2 & !is.na(otherlang) ~ otherlang,
+    language == 2 ~ "Language other than English",
+    TRUE ~ "Unknown"
+  )) |>
   count(language_txt) |>
-  mutate(prop = round(n/sum(n) * 100, digits = 2)) |>
+  filter(n > 5) %>% 
+  mutate(prop = round(n / sum(n) * 100, 2)) |>
   ggplot(aes(x = language_txt, y = prop)) +
   geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
   theme_bw() +
-  labs(x = "Language",
-       y = "Percent",
-       title = "Patient Language Distribution") +
-  geom_text(aes(label = if_else(n > 1,
-                                paste(prop, 
-                                      "% (",
-                                      n,
-                                      ")",
-                                      sep = ""), "")), 
-            vjust = 1.5, 
-            size = 3)
+  labs(
+    x = "Language",
+    y = "Percent",
+    title = "Patient Language Distribution"
+  ) +
+  geom_text(
+    aes(label = if_else(
+      n > 1,
+      paste0(prop, "% (", n, ")"),
+      ""
+    )),
+    vjust = 1.25
+  )
 ```
 
 

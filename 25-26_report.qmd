@@ -1,0 +1,168 @@
+---
+title: "2025-2026 Help Desk Emergency Department Report"
+format: pdf
+editor: source
+---
+
+# Overview
+
+```{r}
+#| label: raceandinsurance
+#| include: false
+library(tidyverse)
+
+#change dataset here Test
+data <- read_csv("Data csv/Data 4:26:26.csv") 
+
+firstSecond <- data |>
+  filter(datescreen >= "2025-08-01" & datescreen < "2026-04-20")
+
+thirdFourth <- data |>
+  filter(datescreen >= "2023-8-01" & datescreen < "2025-08-01")
+
+# date filter
+data <- data |>
+  filter(datescreen >= "2025-08-01" & datescreen < "2026-05-01")
+
+data <- data |>
+   mutate(race = if_else(race___0 == 1, 0, 
+                         if_else(race___1 == 1, 1,
+                                 if_else(race___2 == 1, 2,
+                                         if_else(race___3 == 1, 3, 
+                                                 if_else(race___4 == 1, 4,
+                                                         if_else(race___5 == 1, 5,
+                                                                 if_else(race___6 == 1, 6,
+                                                                         if_else(race___7 == 1, 7, 0)))))))),
+          .before = race___0)
+
+data <- data |>
+  mutate(race = if_else(race == 2 & hispanic == 0, 2, 
+         if_else(race == 2 & hispanic == 1, 2.5,
+                 if_else(race == 4 & hispanic == 0, 4,
+                         if_else(race == 4 & hispanic == 1, 4.5,
+                                 if_else(race != 2 & race != 4, race, -1))))))
+
+data <- data |>
+  mutate(insurance = if_else(insurance___1 == 1,
+                             "Private Insurance",
+                             if_else(insurance___2 == 2,
+                                     "Medicaid",
+                                     if_else(insurance___3 == 1,
+                                             "Medicare",
+                                             if_else(insurance___4 == 1,
+                                                     "No Insurance",
+                                                     if_else(insurance___5 == 1,
+                                                             "Other",
+                                                             "NA"))))))
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: convert race to text
+#| include: false
+data <- data |>
+  mutate(race_txt = case_when(
+    race == 0 ~ "Asian",
+    race == 1 ~ "Pacific Islander",
+    race == 2 ~ "White, Hispanic",
+    race == 2.5 ~ "White, Not Hispanic",
+    race == 3 ~ "Native Hawaiian",
+    race == 4 ~ "Black, Hispanic",
+    race == 4.5 ~ "Black, Not Hispanic",
+    race == 5 ~ "American Indian/Alaskan Native",
+    race == 6 ~ "No Answer",
+    race == 7 ~ "Other",
+  )) |>
+  mutate(race_txt = fct_relevel(race_txt,
+                                "Asian",
+                                "American Indian/Alaskan Native",
+                                "White, Hispanic",
+                                "White, Not Hispanic",
+                                "Black, Hispanic",
+                                "Black, Not Hispanic",
+                                "Pacific Islander",
+                                "Native Hawaiian",
+                                "No Answer",
+                                "Other"))
+```
+```{r message=F, echo=F, warning=F}
+#| label: number of patients 
+#| include: false
+# Each row in the csv is a patient who was screened. Number of patients talked to is not provided in csv.
+
+#create followup 2 weeks_txt var
+data <- data |>
+  mutate(followup_2_weeks_complete_txt = case_when(
+    followup_2_weeks_complete == 0 ~ "Incomplete",
+    followup_2_weeks_complete == 1 ~ "Unverified",
+    followup_2_weeks_complete == 2 ~ "Complete",
+  ))
+
+#scerened poitive
+data <- data |>
+  mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
+
+# total num patients screened
+total_patients <- data |>
+  nrow()
+
+# distinct patients screened
+distinct_patients <- data |>
+  distinct(duplicate_ck) |>
+  nrow()
+
+# screened positive
+screened_pos <- data |>
+  filter(screened_positive == "positive") |>
+  nrow()
+
+# wanted assistance
+wanted_assis <- data |>
+  filter(likeassistance == 1,
+         screened_positive == "positive") |>
+  nrow()
+
+# number of referrals
+num_referrals <- data |>
+  filter(!is.na(attempt1_ref)) |>
+  nrow()
+
+# enrolled in nccare360
+enrolled_nccare360 <- data |>
+  filter(nccare360 == 1) |>
+  nrow()
+
+followup_comp <- data |>
+  filter(followup_2_weeks_complete_txt == "Complete") |>
+  nrow()
+```
+
+The 2025-2026 school year (defined by the dates of August 1st, 2025 to May 1st, 2026) saw `r total_patients` total screenings, with `r distinct_patients` distinct patients screened. `r screened_pos` patients screened positive for at least one need, and `r wanted_assis` patients wanted assistance with their needs. 
+
+There were `r num_referrals` referrals given, with `r followup_comp` 2 week followups complete and `r enrolled_nccare360` patients enrolled in NCCARE360.
+
+
+```{r message=F, echo=F, warning=F}
+#| label: race breakdown
+data |>
+  count(race_txt) |>
+  mutate(prop = round(n/sum(n) * 100, 1)) |>
+  ggplot(aes(x = race_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "black") +
+  coord_flip(clip = "off") +
+  theme_bw() +
+  labs(x = "",
+       y = "Percent",
+       title = "Patient Breakdown By Race and Ethnicity",
+       subtitle = "Who agreed to screening") +
+  geom_text(aes(label = if_else(n < 20, "", paste("N =", n))), size = 3, hjust = 1.05) +
+  geom_text(aes(label = if_else(n > 180, "", paste(prop, "%"))), hjust = -.3, size = 3) +
+  geom_text(aes(label = if_else(n > 180, paste(prop, "%"), "")),
+            hjust = 1,
+            vjust = 4,
+            size = 3)
+                  
+```
+
+
+
+
