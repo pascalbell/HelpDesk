@@ -5,145 +5,243 @@ editor: source
 ---
 
 # Overview
+```{r echo=F, warning=F, message=F}
+#| include: false
+library(knitr)
+library(kableExtra)
+library(writexl)
+library(tigris)
+library(tidyverse)
+library(broom)
+library(stringr)
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: clean_function
+
+clean_ed_data <- function(df, start_date, end_date) {
+  
+  df |>
+    filter(datescreen >= start_date,
+           datescreen < end_date) |>
+    
+    mutate(
+      race = case_when(
+        race___1 == 1 ~ 1,
+        race___2 == 1 ~ 2,
+        race___3 == 1 ~ 3,
+        race___4 == 1 ~ 4,
+        race___5 == 1 ~ 5,
+        race___6 == 1 ~ 6,
+        race___7 == 1 ~ 7,
+        TRUE ~ 0
+      ),
+      
+      race = case_when(
+        race == 2 & hispanic == 1 ~ 2.5,
+        race == 4 & hispanic == 1 ~ 4.5,
+        TRUE ~ race
+      ),
+      
+      insurance = case_when(
+        insurance___1 == 1 ~ "Private Insurance",
+        insurance___2 == 1 ~ "Medicaid",
+        insurance___3 == 1 ~ "Medicare",
+        insurance___4 == 1 ~ "No Insurance",
+        insurance___5 == 1 ~ "Other",
+        TRUE ~ "NA"
+      ),
+      
+      race_txt = case_when(
+        race == 0 ~ "Asian",
+        race == 1 ~ "Pacific Islander",
+        race == 2 ~ "White, Hispanic",
+        race == 2.5 ~ "White, Not Hispanic",
+        race == 3 ~ "Native Hawaiian",
+        race == 4 ~ "Black, Hispanic",
+        race == 4.5 ~ "Black, Not Hispanic",
+        race == 5 ~ "American Indian/Alaskan Native",
+        race == 6 ~ "No Answer",
+        race == 7 ~ "Other"
+      ),
+      
+      gender_txt = case_when(
+        gender == 1 ~ "Man",
+        gender == 2 ~ "Woman",
+        gender == 3 ~ "Transgender",
+        gender == 4 ~ "Non-conforming",
+        gender == 5 ~ "Other"
+      ),
+      
+      followup_2_weeks_complete_txt = case_when(
+        followup_2_weeks_complete == 0 ~ "Incomplete",
+        followup_2_weeks_complete == 1 ~ "Unverified",
+        followup_2_weeks_complete == 2 ~ "Complete"
+      ),
+      
+      screened_positive = if_else(needs___9 == 0, "positive", "negative"),
+      
+      sum_needs =
+        needs___1 + needs___2 + needs___3 + needs___4 +
+        needs___5 + needs___6 + needs___8 + needs___10 +
+        needs___11 + needs___12,
+      
+      num_need = case_when(
+        sum_needs == 0 ~ "No needs",
+        sum_needs == 1 ~ "One Need",
+        sum_needs > 1 ~ "Multiple Needs"
+      )
+    )
+}
+```
+
 
 ```{r}
-#| label: raceandinsurance
+#| label: dataloading
 #| include: false
 library(tidyverse)
 
 #change dataset here Test
 data <- read_csv("Data csv/Data 4:26:26.csv") 
 
-firstSecond <- data |>
-  filter(datescreen >= "2025-08-01" & datescreen < "2026-04-20")
-
-thirdFourth <- data |>
-  filter(datescreen >= "2023-8-01" & datescreen < "2025-08-01")
-
 # date filter
-data <- data |>
-  filter(datescreen >= "2025-08-01" & datescreen < "2026-05-01")
+data_2526 <- data |>
+  clean_ed_data("2025-08-01", "2026-05-01")
 
-data <- data |>
-   mutate(race = if_else(race___0 == 1, 0, 
-                         if_else(race___1 == 1, 1,
-                                 if_else(race___2 == 1, 2,
-                                         if_else(race___3 == 1, 3, 
-                                                 if_else(race___4 == 1, 4,
-                                                         if_else(race___5 == 1, 5,
-                                                                 if_else(race___6 == 1, 6,
-                                                                         if_else(race___7 == 1, 7, 0)))))))),
-          .before = race___0)
+data_2425 <- data |>
+  clean_ed_data("2024-08-01", "2025-05-01")
 
-data <- data |>
-  mutate(race = if_else(race == 2 & hispanic == 0, 2, 
-         if_else(race == 2 & hispanic == 1, 2.5,
-                 if_else(race == 4 & hispanic == 0, 4,
-                         if_else(race == 4 & hispanic == 1, 4.5,
-                                 if_else(race != 2 & race != 4, race, -1))))))
-
-data <- data |>
-  mutate(insurance = if_else(insurance___1 == 1,
-                             "Private Insurance",
-                             if_else(insurance___2 == 2,
-                                     "Medicaid",
-                                     if_else(insurance___3 == 1,
-                                             "Medicare",
-                                             if_else(insurance___4 == 1,
-                                                     "No Insurance",
-                                                     if_else(insurance___5 == 1,
-                                                             "Other",
-                                                             "NA"))))))
 ```
 
 ```{r message=F, echo=F, warning=F}
-#| label: convert race to text
+#| label: overview_func
 #| include: false
-data <- data |>
-  mutate(race_txt = case_when(
-    race == 0 ~ "Asian",
-    race == 1 ~ "Pacific Islander",
-    race == 2 ~ "White, Hispanic",
-    race == 2.5 ~ "White, Not Hispanic",
-    race == 3 ~ "Native Hawaiian",
-    race == 4 ~ "Black, Hispanic",
-    race == 4.5 ~ "Black, Not Hispanic",
-    race == 5 ~ "American Indian/Alaskan Native",
-    race == 6 ~ "No Answer",
-    race == 7 ~ "Other",
-  )) |>
-  mutate(race_txt = fct_relevel(race_txt,
-                                "Asian",
-                                "American Indian/Alaskan Native",
-                                "White, Hispanic",
-                                "White, Not Hispanic",
-                                "Black, Hispanic",
-                                "Black, Not Hispanic",
-                                "Pacific Islander",
-                                "Native Hawaiian",
-                                "No Answer",
-                                "Other"))
+
+get_overview_stats <- function(df) {
+  
+  df <- df |>
+    mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
+  
+  list(
+    total_patients = nrow(df),
+    
+    distinct_patients = df |>
+      distinct(duplicate_ck) |>
+      nrow(),
+    
+    screened_pos = df |>
+      filter(screened_positive == "positive") |>
+      nrow(),
+    
+    wanted_assis = df |>
+      filter(likeassistance == 1,
+             screened_positive == "positive") |>
+      nrow(),
+    
+    num_referrals = df |>
+      filter(!is.na(attempt1_ref)) |>
+      nrow(),
+    
+    enrolled_nccare360 = df |>
+      filter(nccare360 == 1) |>
+      nrow(),
+    
+    followup_comp = df |>
+      filter(followup_2_weeks_complete_txt == "Complete") |>
+      nrow()
+  )
+}
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: overview_table
+
+stats_2526 <- get_overview_stats(data_2526)
+stats_2425 <- get_overview_stats(data_2425)
+
+overview_table <- tibble(
+  metric = c(
+    "Total screenings",
+    "Distinct patients",
+    "Screened positive",
+    "Requested assistance",
+    "Referrals",
+    "Enrolled NCCARE360",
+    "Completed 2-week follow-up"
+  ),
+  
+  `2024–2025` = c(
+    stats_2425$total_patients,
+    stats_2425$distinct_patients,
+    stats_2425$screened_pos,
+    stats_2425$wanted_assis,
+    stats_2425$num_referrals,
+    stats_2425$enrolled_nccare360,
+    stats_2425$followup_comp
+  ),
+  
+  `2025–2026` = c(
+    stats_2526$total_patients,
+    stats_2526$distinct_patients,
+    stats_2526$screened_pos,
+    stats_2526$wanted_assis,
+    stats_2526$num_referrals,
+    stats_2526$enrolled_nccare360,
+    stats_2526$followup_comp
+  )
+)
+
+knitr::kable(overview_table, caption = "Help Desk Overview Comparison")
 ```
 ```{r message=F, echo=F, warning=F}
-#| label: number of patients 
-#| include: false
-# Each row in the csv is a patient who was screened. Number of patients talked to is not provided in csv.
-
-#create followup 2 weeks_txt var
-data <- data |>
-  mutate(followup_2_weeks_complete_txt = case_when(
-    followup_2_weeks_complete == 0 ~ "Incomplete",
-    followup_2_weeks_complete == 1 ~ "Unverified",
-    followup_2_weeks_complete == 2 ~ "Complete",
+#| label: screening by age
+screenage <- data_2526 |>
+  mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative")) %>% 
+  mutate(age_bins = case_when(
+    age_at_encounter >= 15 & age_at_encounter < 25 ~ "15-25",
+    age_at_encounter >= 25 & age_at_encounter < 35 ~ "25-35",
+    age_at_encounter >= 35 & age_at_encounter < 45 ~ "35-45",
+    age_at_encounter >= 45 & age_at_encounter < 55 ~ "45-55",
+    age_at_encounter >= 55 & age_at_encounter < 65 ~ "55-65",
+    age_at_encounter >= 65 ~ "65+"
   ))
 
-#scerened poitive
-data <- data |>
-  mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
-
-# total num patients screened
-total_patients <- data |>
-  nrow()
-
-# distinct patients screened
-distinct_patients <- data |>
-  distinct(duplicate_ck) |>
-  nrow()
-
-# screened positive
-screened_pos <- data |>
-  filter(screened_positive == "positive") |>
-  nrow()
-
-# wanted assistance
-wanted_assis <- data |>
-  filter(likeassistance == 1,
-         screened_positive == "positive") |>
-  nrow()
-
-# number of referrals
-num_referrals <- data |>
-  filter(!is.na(attempt1_ref)) |>
-  nrow()
-
-# enrolled in nccare360
-enrolled_nccare360 <- data |>
-  filter(nccare360 == 1) |>
-  nrow()
-
-followup_comp <- data |>
-  filter(followup_2_weeks_complete_txt == "Complete") |>
-  nrow()
+screenage |>
+  count(screened_positive, age_bins) |>
+  rename("Age" = age_bins,
+         "Screening" = screened_positive,
+         "Count" = n) |>
+  kable()
 ```
 
-The 2025-2026 school year (defined by the dates of August 1st, 2025 to May 1st, 2026) saw `r total_patients` total screenings, with `r distinct_patients` distinct patients screened. `r screened_pos` patients screened positive for at least one need, and `r wanted_assis` patients wanted assistance with their needs. 
 
-There were `r num_referrals` referrals given, with `r followup_comp` 2 week followups complete and `r enrolled_nccare360` patients enrolled in NCCARE360.
+# Demographic Distributions
+```{r message=F, echo=F, warning=F}
+#| label: patients by gender
 
-
+data_2526 |>
+  count(gender_txt) |>
+  filter(gender_txt == "Man" 
+         | gender_txt == "Woman"
+         | gender_txt == "Other"
+         | is.na(gender_txt)) |>
+  mutate(prop = round(100 * n/sum(n), 0)) |>
+  ggplot(aes(x = gender_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  theme_bw() +
+  labs(x = "Gender",
+       y = "Percent",
+       title = "Patient Gender Distribution") +
+  geom_text(aes(label = if_else(n > 1,
+                                paste(prop, 
+                                      "% (",
+                                      n,
+                                      ")",
+                                      sep = ""), "")), vjust = 1.5)
+```
 ```{r message=F, echo=F, warning=F}
 #| label: race breakdown
-data |>
+data_2526 |>
   count(race_txt) |>
   mutate(prop = round(n/sum(n) * 100, 1)) |>
   ggplot(aes(x = race_txt, y = prop)) +
@@ -154,6 +252,7 @@ data |>
        y = "Percent",
        title = "Patient Breakdown By Race and Ethnicity",
        subtitle = "Who agreed to screening") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
   geom_text(aes(label = if_else(n < 20, "", paste("N =", n))), size = 3, hjust = 1.05) +
   geom_text(aes(label = if_else(n > 180, "", paste(prop, "%"))), hjust = -.3, size = 3) +
   geom_text(aes(label = if_else(n > 180, paste(prop, "%"), "")),
@@ -163,6 +262,594 @@ data |>
                   
 ```
 
+```{r message=F, echo=F, warning=F}
+#| label: language distribution
+
+data_2526 |>
+  mutate(
+    otherlang_clean = otherlang |>
+      str_to_lower() |>                  # lowercase everything
+      str_trim() |>                      # remove extra spaces
+      str_replace_all("espa√±ol", "espanol") |>  # fix encoding issue
+      str_replace_all("ñ", "n")          # normalize ñ → n
+  ) |>
+  mutate(
+    otherlang_clean = case_when(
+      str_detect(otherlang_clean, "spanish|espanol") ~ "Spanish",
+      TRUE ~ otherlang_clean
+    )
+  ) |>
+  mutate(language_txt = case_when(
+    language == 0 ~ "English",
+    language == 1 ~ "Choose not to answer",
+    language == 2 & !is.na(otherlang) ~ otherlang,
+    language == 2 ~ "Language other than English",
+    TRUE ~ "Unknown"
+  )) |>
+  count(language_txt) |>
+  filter(n > 5) %>% 
+  mutate(prop = round(n / sum(n) * 100, 2)) |>
+  ggplot(aes(x = language_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  theme_bw() +
+  labs(
+    x = "Language",
+    y = "Percent",
+    title = "Patient Language Distribution"
+  ) +
+  geom_text(
+    aes(label = if_else(
+      n > 1,
+      paste0(prop, "% (", n, ")"),
+      ""
+    )),
+    vjust = 1.25
+  )
+```
+```{r message=F, echo=F, warning=F}
+#| label: Patients by Age
+
+age_bin <- data_2526 |>
+  mutate(age_bins = case_when(
+    age_at_encounter >= 15 & age_at_encounter < 25 ~ "15-25",
+    age_at_encounter >= 25 & age_at_encounter < 35 ~ "25-35",
+    age_at_encounter >= 35 & age_at_encounter < 45 ~ "35-45",
+    age_at_encounter >= 45 & age_at_encounter < 55 ~ "45-55",
+    age_at_encounter >= 55 & age_at_encounter < 65 ~ "55-65",
+    age_at_encounter >= 65 ~ "65+"
+  ))
+
+age_bin |>
+  count(age_bins) |>
+  mutate(prop = round(100 * n/sum(n), 0)) |>
+  filter(!is.na(age_bins)) |>
+  ggplot(aes(x = age_bins, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "gray") +
+  theme_bw() +
+  labs(x = "Age",
+       y = "Percent",
+       title = "Patient Age Distribution") +
+  geom_text(aes(label = if_else(n > 1,
+                                paste(prop, 
+                                      "% (",
+                                      n,
+                                      ")",
+                                      sep = ""), "")), 
+            vjust = 1.5, 
+            size = 3)
+```
+
+# Needs and Referral Breakdown
+
+```{r message=F, echo=F, warning=F}
+#| label: needs breakdown
+
+needs <- data_2526 |>
+  select(contains("needs")) |>
+  summarize(total1 = sum(needs___1),
+            total2 = sum(needs___2),
+            total3 = sum(needs___3),
+            total4 = sum(needs___4),
+            total5 = sum(needs___5),
+            total6 = sum(needs___6),
+            total7 = sum(needs___7),
+            total8 = sum(needs___8),
+            total9 = sum(needs___9),
+            total10 = sum(needs___10),
+            total11 = sum(needs___11),
+            total12 = sum(needs___12)) |>
+  mutate(total = 0) |>
+  pivot_longer(!total, names_to = "need_category", values_to = "count") |>
+  select(!total) |>
+  mutate(need = case_when(
+    need_category == "total1" ~ "Food",
+    need_category == "total2" ~ "Clothing",
+    need_category == "total3" ~ "Child care",
+    need_category == "total4" ~ "Utilities",
+    need_category == "total5" ~ "Medicine/Health Care",
+    need_category == "total6" ~ "Phone",
+    need_category == "total7" ~ "No Answer",
+    need_category == "total8" ~ "Other",
+    need_category == "total9" ~ "None",
+    need_category == "total10" ~ "Housing",
+    need_category == "total11" ~ "Internet",
+    need_category == "total12" ~ "Transportation",
+  )) |>
+  mutate(prop = count/sum(count) * 100) #change to prop by prop = count/sum(count)
+
+needs |>
+  mutate(prop = round(prop, digits = 2),
+         need = fct_relevel(need, "Other", "None", "No Answer")) |>
+  filter(need != "No Answer") |>
+  ggplot(aes(x = need, y = prop, fill = need)) +
+  geom_bar(width = 1, stat = "identity", color = "black", show.legend = FALSE) +
+  theme_light() +
+  labs(x = "", 
+       y = "Percent of Patients", 
+       title = "Needs Breakdown") +
+  geom_text(aes(label = paste("N = ", count)), hjust = 1.05, size = 3) +
+  geom_text(aes(label = if_else(count < 350, paste(prop, "%", sep = ""), "")),
+            hjust = -.3,
+            size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.20)))+
+  coord_flip() +
+  geom_text(aes(label = if_else(count > 350, paste(prop, "%", sep = ""), "")),
+            hjust = 1,
+            vjust = 3.5,
+            size = 3)
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: multiple/one need
+
+multineed <- data_2526 |>
+  mutate(sum_needs = needs___1 + needs___2 +
+                         needs___3 +
+                         needs___4 +
+                         needs___5 +
+                         needs___6 +
+                         needs___8 +
+                         needs___10 +
+                         needs___11 +
+                         needs___12,
+         num_need = case_when(
+           sum_needs == 0 ~ "No needs",
+           sum_needs == 1 ~ "One Need",
+           sum_needs > 1 ~ "Multiple Needs"
+         ))
+multineed |>
+  filter(num_need != "No needs") |>
+  count(race_txt, num_need) |>
+  filter(race_txt != "No Answer",
+         race_txt != "Other",
+         race_txt != "Native Hawaiian",
+         race_txt != "Pacific Islander",
+         !is.na(race_txt)) |>
+  mutate(prop = round(100*n/sum(n), 0)) |>
+  ggplot(aes(x = race_txt, y = prop)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "grey") +
+  facet_wrap("num_need") +
+  labs(x = "",
+       y = "Percent",
+       title = "Multineed Breakdown") +
+  coord_flip() +
+ geom_text(aes(label = if_else(n > 50,
+                              paste(prop, "% (", n, ")", sep = ""),"")),
+          size = 2.5,
+          angle = 90,
+          vjust = -0.5, 
+          hjust = 0.5) +
+geom_text(aes(label = if_else(n < 50,
+                              paste(prop, "% (", n, ")", sep = ""),"")),
+          size = 2.5,
+          angle = 90,
+          vjust = -0.5, 
+          hjust = 0.5)
+  
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: cor_matrix
+#| fig-width: 8
+#| fig-height: 8
+library(psych)
+library(pheatmap)
+
+needs_mat <- data_2526 |> select(starts_with("needs___"))
+
+tetra_cor <- tetrachoric(needs_mat)$rho
+
+need_labels <- c(
+  "needs___1" = "Food",
+  "needs___2" = "Clothing",
+  "needs___3" = "Child care",
+  "needs___4" = "Utilities",
+  "needs___5" = "Medicine/Health Care",
+  "needs___6" = "Phone",
+  "needs___7" = "No Answer",
+  "needs___8" = "Other",
+  "needs___9" = "None",
+  "needs___10" = "Housing",
+  "needs___11" = "Internet",
+  "needs___12" = "Transportation"
+)
+
+colnames(tetra_cor) <- need_labels[colnames(tetra_cor)]
+rownames(tetra_cor) <- need_labels[rownames(tetra_cor)]
+
+pheatmap(
+  tetra_cor,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  display_numbers = TRUE,
+  number_format = "%.2f",
+  fontsize_number = 8,
+  main = "Tetrachloric Correlation of Needs"
+)
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: referral_plot
+#| fig-width: 8
+#| fig-height: 8
+ref_cat_data <- data_2526 |>
+  select(contains("ref_cat")) |>
+  summarize(total1 = sum(ref_cat___1),
+            total2 = sum(ref_cat___2),
+            total3 = sum(ref_cat___3),
+            total4 = sum(ref_cat___4),
+            total5 = sum(ref_cat___5),
+            total6 = sum(ref_cat___6),
+            total7 = sum(ref_cat___7),
+            total8 = sum(ref_cat___8),
+            total9 = sum(ref_cat___9),
+            total10 = sum(ref_cat___10),
+            total11 = sum(ref_cat___11),
+            total12 = sum(ref_cat___12),
+            total13 = sum(ref_cat___13)) |>
+  mutate(total = 0) |>
+  pivot_longer(!total, names_to = "ref_cat_num", values_to = "count") |>
+  select(!total) |>
+  mutate(ref_cat = case_when(
+    ref_cat_num == "total1" ~ "Food insecurity",
+    ref_cat_num == "total2" ~ "Transportation",
+    ref_cat_num == "total3" ~ "Housing",
+    ref_cat_num == "total4" ~ "Educational/Professional Development",
+    ref_cat_num == "total5" ~ "Childcare/Youth Development",
+    ref_cat_num == "total6" ~ "Financial",
+    ref_cat_num == "total7" ~ "Access to Medical Care",
+    ref_cat_num == "total8" ~ "Social & Emotional Health",
+    ref_cat_num == "total9" ~ "Conflict with Criminal Justice System",
+    ref_cat_num == "total10" ~ "Domestic/intimate partner violence",
+    ref_cat_num == "total11" ~ "Utilities",
+    ref_cat_num == "total12" ~ "Clothing",
+    ref_cat_num == "total12" ~ "No Referral"
+  )) |>
+  mutate(ref_cat = fct_relevel(ref_cat, "No Referral"),
+         prop = round(count/sum(count), digits = 2))
+
+ref_cat_data |>
+  ggplot(aes(x = ref_cat, y = prop, fill = ref_cat)) +
+  geom_bar(width = 1, stat = "identity", color = "black") +
+  theme_light() +
+  labs(x = "Need",
+       title = "Referral Categories Breakdown",
+       y = "Proportion",
+       fill = "") +
+  geom_text(aes(label = prop), vjust = -.75, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  theme(axis.text.x = element_blank()) +
+  scale_fill_manual(
+    values = colorRampPalette(
+      c("#f7fbff", "#9ecae1", "#6baed6", "#2171b5", "#021024")
+    )(13)
+  )
+```
 
 
+# Location Information
 
+```{r message=F, echo=F, warning=F}
+#| label: zipcode_plot
+options(tigris_use_cache = TRUE)
+
+patient_zip <- data_2526 |>
+  select(zipcode) |>
+  drop_na() |>
+  count(zipcode, name = "Number of Patients")
+
+us_states <- states(progress_bar = FALSE)
+nc <- us_states |> filter(STUSPS == "NC")
+zipcodes <- zctas(year = 2000, state = "NC", cb = TRUE) |>
+  filter(ZCTA %in% patient_zip$zipcode)
+
+zipcodes <- zipcodes |>
+  left_join(patient_zip, by = c("ZCTA" = "zipcode"))
+
+ggplot() +
+  geom_sf(data = nc, fill = "white") +
+  geom_sf(data = zipcodes, aes(fill = `Number of Patients`), linewidth = 0.1) +
+  scale_fill_gradientn(colors = c("lightblue", "#2171b5", "navy"),
+                        values = c(0, 0.03, 1)) +
+  labs(title = "Zipcode Map Plot") +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(), 
+    axis.text.y = element_blank(), 
+    axis.ticks.y = element_blank()
+  )
+```
+
+```{r message = F, echo=F, warning = F}
+#| label: zipcode_distribution
+
+patient_zip |>
+  filter(zipcode != "00000") |>
+  arrange(desc(`Number of Patients`)) |>
+  mutate(Percent = `Number of Patients` / sum(`Number of Patients`)) |>
+  slice(1:10) |>
+  ggplot(aes(x = reorder(zipcode, Percent), y = Percent)) + 
+  geom_col(fill = "lightblue") +
+  coord_flip() +
+  labs(title = "Most Common Zipcodes", x = "ZIP Code", y = "Percentage of Patients") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2)))+
+  geom_text(aes(label = paste0(round(Percent * 100, 1), "% (", 
+                                   `Number of Patients`, ")")),
+            size = 3,
+            hjust = -0.1)
+
+```
+# Comparison to Previous Year (2024-2025)
+
+```{r message=F, echo=F, warning=F}
+#| label: data_load_2
+
+data_2526 <- data |>
+  clean_ed_data("2025-08-01", "2026-05-01") |>
+  mutate(year = "2025–2026")
+
+data_2425 <- data |>
+  clean_ed_data("2024-08-01", "2025-05-01") |>
+  mutate(year = "2024–2025")
+
+data_all <- bind_rows(data_2425, data_2526)
+
+
+```
+
+
+```{r message=F, echo=F, warning=F}
+#| label: needs_comp
+
+needs_long <- data_all |>
+  select(year, starts_with("needs___")) |>
+  pivot_longer(-year, names_to = "need_var", values_to = "value") |>
+  group_by(year, need_var) |>
+  summarise(count = sum(value, na.rm = TRUE), .groups = "drop") |>
+  group_by(year) |>
+  mutate(prop = count / sum(count) * 100)
+
+need_labels <- c(
+  "needs___1" = "Food",
+  "needs___2" = "Clothing",
+  "needs___3" = "Child care",
+  "needs___4" = "Utilities",
+  "needs___5" = "Medicine/Health Care",
+  "needs___6" = "Phone",
+  "needs___7" = "No Answer",
+  "needs___8" = "Other",
+  "needs___9" = "None",
+  "needs___10" = "Housing",
+  "needs___11" = "Internet",
+  "needs___12" = "Transportation"
+)
+
+needs_long <- needs_long |>
+  mutate(
+    need = need_labels[need_var]
+  ) |>
+  filter(!is.na(need), need != "No Answer")
+
+needs_long |>
+  ggplot(aes(x = reorder(need, prop), y = prop, fill = year)) +
+  geom_col(position = position_dodge(width = 0.9), color = "black") +
+  geom_text(
+    aes(label = paste0(round(prop, 1), "%")),
+    position = position_dodge(width = 0.9),
+    hjust = -0.15,
+    size = 3
+  ) +
+  coord_flip() +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Percent of Patients",
+    title = "Comparison of Patient Needs Across Years"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  scale_fill_manual(values = c("2024–2025" = "gray70",
+                               "2025–2026" = "lightblue"))
+```
+
+```{r message=F, echo=F, warning=F}
+#| label: complexity_comp
+
+complexity <- data_all |>
+  group_by(year, num_need) |>
+  summarise(n = n(), .groups = "drop") |>
+  group_by(year) |>
+  mutate(prop = n / sum(n) * 100)
+
+ggplot(complexity, aes(x = year, y = prop, fill = num_need)) +
+  geom_col() +
+  geom_text(
+    aes(label = paste0(round(prop, 1), "%")),
+    position = position_stack(vjust = 0.5),
+    size = 3
+  ) +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Percent",
+    title = "Complexity of Patient Needs Across Years",
+    fill = "Need Type"
+  ) +
+  scale_fill_brewer(palette = "Set2")
+```
+```{r message=F, echo=F, warning=F}
+#| label: race_comp
+race_comp <- data_all |>
+  count(year, race_txt) |>
+  group_by(year) |>
+  mutate(prop = n / sum(n) * 100) |>
+  ungroup()
+
+ggplot(race_comp, aes(x = race_txt, y = prop, fill = year)) +
+  geom_col(position = position_dodge(width = 0.9), color = "black") +
+  
+  geom_text(
+    aes(label = paste0(round(prop, 1), "%")),
+    position = position_dodge(width = 0.9),
+    hjust = -0.1,
+    size = 3
+  ) +
+  
+  coord_flip() +
+  
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Percent of Patients",
+    title = "Race/Ethnicity Distribution Across Years",
+    fill = "Year"
+  ) +
+  
+  scale_y_continuous(expand = expansion(mult = c(0, 0.20)))
+
+```
+```{r message=F, echo=F, warning=F}
+#| label: zipcode_comp
+
+zipcode_year <- data_all |>
+  filter(!is.na(zipcode), zipcode != "00000") |>
+  count(year, zipcode, name = "n") |>
+  group_by(year) |>
+  mutate(prop = n / sum(n)) |>
+  ungroup()
+
+
+top_zips <- zipcode_year |>
+  group_by(zipcode) |>
+  summarise(total = sum(n), .groups = "drop") |>
+  slice_max(total, n = 10) |>
+  pull(zipcode)
+
+zipcode_year |>
+  filter(zipcode %in% top_zips) |>
+  ggplot(aes(x = reorder(zipcode, prop), y = prop, fill = year)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_text(
+    aes(label = paste0(round(prop * 100, 1), "%")),
+    position = position_dodge(width = 0.9),
+    hjust = -0.1,
+    size = 3
+  ) +
+  coord_flip() +
+  labs(
+    x = "ZIP Code",
+    y = "Proportion of Patients",
+    title = "Top ZIP Codes: 2024–25 vs 2025–26",
+    fill = "Year"
+  ) +
+  theme_bw() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2)))
+
+```
+
+
+```{r message=F, echo=F, warning=F}
+#| label: referral_plot_comp
+#| fig-width: 8
+#| fig-height: 8
+
+
+get_referral_data <- function(df, year_label) {
+  
+  df |>
+    select(contains("ref_cat")) |>
+    summarize(
+      total1 = sum(ref_cat___1),
+      total2 = sum(ref_cat___2),
+      total3 = sum(ref_cat___3),
+      total4 = sum(ref_cat___4),
+      total5 = sum(ref_cat___5),
+      total6 = sum(ref_cat___6),
+      total7 = sum(ref_cat___7),
+      total8 = sum(ref_cat___8),
+      total9 = sum(ref_cat___9),
+      total10 = sum(ref_cat___10),
+      total11 = sum(ref_cat___11),
+      total12 = sum(ref_cat___12),
+      total13 = sum(ref_cat___13)
+    ) |>
+    mutate(year = year_label) |>
+    pivot_longer(
+      cols = starts_with("total"),
+      names_to = "ref_cat_num",
+      values_to = "count"
+    ) |>
+    mutate(ref_cat = case_when(
+      ref_cat_num == "total1" ~ "Food insecurity",
+      ref_cat_num == "total2" ~ "Transportation",
+      ref_cat_num == "total3" ~ "Housing",
+      ref_cat_num == "total4" ~ "Educational/Professional Development",
+      ref_cat_num == "total5" ~ "Childcare/Youth Development",
+      ref_cat_num == "total6" ~ "Financial",
+      ref_cat_num == "total7" ~ "Access to Medical Care",
+      ref_cat_num == "total8" ~ "Social & Emotional Health",
+      ref_cat_num == "total9" ~ "Conflict with Criminal Justice System",
+      ref_cat_num == "total10" ~ "Domestic/intimate partner violence",
+      ref_cat_num == "total11" ~ "Utilities",
+      ref_cat_num == "total12" ~ "Clothing",
+      ref_cat_num == "total13" ~ "No Referral"
+    )) |>
+    filter(!is.na(ref_cat)) |>
+    group_by(year) |>
+    mutate(prop = count / sum(count)) |>
+    ungroup()
+}
+
+ref_2425 <- get_referral_data(data_2425, "2024–2025")
+ref_2526 <- get_referral_data(data_2526, "2025–2026")
+
+ref_all <- bind_rows(ref_2425, ref_2526)
+
+ref_all |>
+  ggplot(aes(x = ref_cat, y = prop, fill = year)) +
+  geom_col(position = position_dodge(width = 0.9), color = "black") +
+  
+  geom_text(
+    aes(label = paste0(round(prop * 100, 1), "%")),
+    position = position_dodge(width = 0.9),
+    hjust = -0.1,
+    size = 3
+  ) +
+  
+  coord_flip() +
+  theme_light() +
+  labs(
+    x = "Referral Category",
+    y = "Proportion",
+    title = "Referral Categories: 2024–25 vs 2025–26",
+    fill = "Year"
+  ) +
+  
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  
+  scale_fill_manual(values = c(
+    "2024–2025" = "gray70",
+    "2025–2026" = "#2171b5"
+  ))
+```
