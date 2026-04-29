@@ -487,6 +487,7 @@ pheatmap(
   main = "Tetrachloric Correlation of Needs"
 )
 ```
+A  value closer to -1 indicates a high negative correlation, indicating that across patient samples, as one need appears, another tends to not appear. A value around 0 indicates little to no correlation between two needs. A value closer to 1 indicates a high positive correlation between two needs—they often appear with each other. 
 
 ```{r message=F, echo=F, warning=F}
 #| label: referral_plot
