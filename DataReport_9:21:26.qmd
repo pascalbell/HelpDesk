@@ -1,0 +1,139 @@
+---
+title: "Total Count Report 9-21-26"
+format: html
+editor: visual
+---
+
+Clean Data Function/Overview Stats Function
+
+```{r}
+clean_ed_data <- function(df, start_date, end_date) {
+  
+  df |>
+    filter(datescreen >= start_date,
+           datescreen < end_date) |>
+    
+    mutate(
+      race = case_when(
+        race___1 == 1 ~ 1,
+        race___2 == 1 ~ 2,
+        race___3 == 1 ~ 3,
+        race___4 == 1 ~ 4,
+        race___5 == 1 ~ 5,
+        race___6 == 1 ~ 6,
+        race___7 == 1 ~ 7,
+        TRUE ~ 0
+      ),
+      
+      race = case_when(
+        race == 2 & hispanic == 1 ~ 2.5,
+        race == 4 & hispanic == 1 ~ 4.5,
+        TRUE ~ race
+      ),
+      
+      insurance = case_when(
+        insurance___1 == 1 ~ "Private Insurance",
+        insurance___2 == 1 ~ "Medicaid",
+        insurance___3 == 1 ~ "Medicare",
+        insurance___4 == 1 ~ "No Insurance",
+        insurance___5 == 1 ~ "Other",
+        TRUE ~ "NA"
+      ),
+      
+      race_txt = case_when(
+        race == 0 ~ "Asian",
+        race == 1 ~ "Pacific Islander",
+        race == 2 ~ "White, Hispanic",
+        race == 2.5 ~ "White, Not Hispanic",
+        race == 3 ~ "Native Hawaiian",
+        race == 4 ~ "Black, Hispanic",
+        race == 4.5 ~ "Black, Not Hispanic",
+        race == 5 ~ "American Indian/Alaskan Native",
+        race == 6 ~ "No Answer",
+        race == 7 ~ "Other"
+      ),
+      
+      gender_txt = case_when(
+        gender == 1 ~ "Man",
+        gender == 2 ~ "Woman",
+        gender == 3 ~ "Transgender",
+        gender == 4 ~ "Non-conforming",
+        gender == 5 ~ "Other"
+      ),
+      
+      followup_2_weeks_complete_txt = case_when(
+        followup_2_weeks_complete == 0 ~ "Incomplete",
+        followup_2_weeks_complete == 1 ~ "Unverified",
+        followup_2_weeks_complete == 2 ~ "Complete"
+      ),
+      
+      screened_positive = if_else(needs___9 == 0, "positive", "negative"),
+      
+      sum_needs =
+        needs___1 + needs___2 + needs___3 + needs___4 +
+        needs___5 + needs___6 + needs___8 + needs___10 +
+        needs___11 + needs___12,
+      
+      num_need = case_when(
+        sum_needs == 0 ~ "No needs",
+        sum_needs == 1 ~ "One Need",
+        sum_needs > 1 ~ "Multiple Needs"
+      )
+    )
+}
+
+get_overview_stats <- function(df) {
+  
+  df <- df |>
+    mutate(screened_positive = if_else(needs___9 == 0, "positive", "negative"))
+  
+  list(
+    total_patients = nrow(df),
+    
+    distinct_patients = df |>
+      distinct(duplicate_ck) |>
+      nrow(),
+    
+    screened_pos = df |>
+      filter(screened_positive == "positive") |>
+      nrow(),
+    
+    wanted_assis = df |>
+      filter(likeassistance == 1,
+             screened_positive == "positive") |>
+      nrow(),
+    
+    num_referrals = df |>
+      filter(!is.na(attempt1_ref)) |>
+      nrow(),
+    
+    enrolled_nccare360 = df |>
+      filter(nccare360 == 1) |>
+      nrow(),
+    
+    followup_comp = df |>
+      filter(followup_2_weeks_complete_txt == "Complete") |>
+      nrow()
+  )
+}
+```
+
+```{r}
+#packages
+library(knitr)
+library(kableExtra)
+library(writexl)
+library(tigris)
+library(tidyverse)
+library(broom)
+library(stringr)
+
+#load data
+data <- read_csv("Data csv/Data 9:21:26.csv") 
+all_time_data <- data %>% 
+  clean_ed_data("2000-01-01", "2100-01-01")
+
+#get stats
+all_time_data %>% 
+  get_overview_stats()
+```
